@@ -1,4 +1,4 @@
-name: 0x00 dl
+name: Downloader
 
 on:
   workflow_dispatch:
@@ -19,6 +19,11 @@ on:
           - 'Best (Highest available)'
       password:
         description: 'ZIP Password (Optional - No ZIP applied if empty & under 95MB)'
+        required: false
+        type: string
+        default: ''
+      ytlpopts:
+        description: 'Additional options for yt-dlp'
         required: false
         type: string
         default: ''
@@ -109,6 +114,7 @@ jobs:
         run: |
           RAW_URLS="${{ github.event.inputs.url }}"
           QUALITY="${{ github.event.inputs.quality }}"
+          YTDLP_OPTS="${{ github.event.inputs.ytlpopts }}"
           
           FORMATTED_URLS=$(echo "$RAW_URLS" | tr ',' ' ' | tr '\n' ' ')
           
@@ -116,11 +122,14 @@ jobs:
           mkdir -p tmp_downloads dl
           
           if [[ "$QUALITY" == *"720p"* ]]; then
-            YTDLP_F="-f bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best --merge-output-format mp4"
+            # YTDLP_F="-f bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best --merge-output-format mp4"
+            YTDLP_F='-f best[height<=720] --write-subs --sub-lang en --embed-subs'
           elif [[ "$QUALITY" == *"480p"* ]]; then
-            YTDLP_F="-f bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4][height<=480]/best --merge-output-format mp4"
+            # YTDLP_F="-f bestvideo[ext=mp4][height<=480]+bestaudio[ext=m4a]/best[ext=mp4][height<=480]/best --merge-output-format mp4"
+            YTDLP_F='-f best[height<=480] --write-subs --sub-lang en --embed-subs'
           elif [[ "$QUALITY" == *"360p"* ]]; then
-            YTDLP_F="-f bestvideo[ext=mp4][height<=360]+bestaudio[ext=m4a]/best[ext=mp4][height<=360]/best --merge-output-format mp4"
+            # YTDLP_F="-f bestvideo[ext=mp4][height<=360]+bestaudio[ext=m4a]/best[ext=mp4][height<=360]/best --merge-output-format mp4"
+            YTDLP_F='-f best[height<=360] --write-subs --sub-lang en --embed-subs'
           elif [[ "$QUALITY" == *"Audio"* ]]; then
             YTDLP_F="-x --audio-format mp3"
           else
@@ -143,7 +152,7 @@ jobs:
               COOKIE_ARG=""
               [ -s youtube_cookies.txt ] && COOKIE_ARG="--cookies youtube_cookies.txt"
               
-              yt-dlp --js-runtimes bun:$HOME/.bun/bin/bun $COOKIE_ARG $YTDLP_F -o "tmp_downloads/%(title)s.%(ext)s" "$URL"
+              yt-dlp --js-runtimes bun:$HOME/.bun/bin/bun $COOKIE_ARG $YTDLP_F -o "tmp_downloads/%(title)s.%(ext)s" $YTDLP_OPTS "$URL"
               
             else
               echo "Downloading direct file with aria2..."
